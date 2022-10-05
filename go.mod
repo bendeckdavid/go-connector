@@ -1,12 +1,10 @@
 module github.com/BendeckDev/go_connector.git
 
-//go.bendeck.dev/connector
-
 go 1.19
 
 require (
 	github.com/labstack/echo/v4 v4.9.0
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b
 	golang.org/x/net v0.0.0-20221004154528-8021a29435af
 )
 

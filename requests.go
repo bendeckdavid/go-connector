@@ -10,7 +10,7 @@ import (
 
 type requestType string
 
-const (
+var (
 	Get  requestType = "GET"
 	Post requestType = "POST"
 )

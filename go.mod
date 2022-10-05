@@ -1,5 +1,6 @@
-module github.com/BendeckDev/go_connector.git 
-//module go.bendeck.dev/connector
+module github.com/BendeckDev/go_connector.git
+
+//go.bendeck.dev/connector
 
 go 1.19
 

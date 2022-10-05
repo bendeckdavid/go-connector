@@ -19,16 +19,14 @@ type Response struct {
 	Status int            `json:"status"`
 }
 
-func SendError(c echo.Context, err error, status int) error {
-
+func BuildError(err error, status int) Response {
 	return Response{
 		Status: status,
 		Error: &errorResponse{
 			Message: http.StatusText(status),
 			Details: fmt.Sprint(err),
 		},
-	}.Send(c)
-
+	}
 }
 
 func (res Response) Send(c echo.Context) error {

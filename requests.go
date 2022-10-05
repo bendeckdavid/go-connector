@@ -3,7 +3,6 @@ package connector
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -32,19 +31,24 @@ func (h Header) Register(req *http.Request) {
 }
 
 func (req Request) Make() Response {
-	var query *http.Request
+	var payload []byte
 
-	content, err := json.Marshal(req.Body)
-	if err != nil {
-		return BuildError(err, http.StatusBadRequest)
+	if req.Body != nil {
+		var err error
+		payload, err = json.Marshal(req.Body)
+		if err != nil {
+			return BuildError(err, http.StatusBadRequest)
+		}
 	}
 
-	if query, err = http.NewRequest(
-		fmt.Sprint(req.Type),
+	query, err := http.NewRequest(
+		string(*req.Type),
 		req.Endpoint,
-		bytes.NewBuffer(content),
-	); err != nil {
-		return BuildError(err, http.StatusBadRequest)
+		bytes.NewBuffer(payload),
+	)
+
+	if err != nil {
+		return BuildError(err, http.StatusInternalServerError)
 	}
 
 	for _, header := range req.Headers {
@@ -55,18 +59,18 @@ func (req Request) Make() Response {
 
 	res, err := (&http.Client{}).Do(query)
 	if err != nil {
-		return BuildError(err, http.StatusBadRequest)
+		return BuildError(err, res.StatusCode)
 	}
 
 	defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
+	content, err := io.ReadAll(res.Body)
 	if err != nil {
-		return BuildError(err, http.StatusBadRequest)
+		return BuildError(err, res.StatusCode)
 	}
 
 	return Response{
-		Data:   body,
+		Data:   string(content),
 		Status: res.StatusCode,
 	}
 }

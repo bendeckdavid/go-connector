@@ -1,4 +1,4 @@
-module modules.bendeck.dev/connector
+module go.bendeck.dev/connector
 
 go 1.19
 

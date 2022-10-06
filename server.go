@@ -23,10 +23,10 @@ type Server struct {
 	TLSCache string
 }
 
-var loggerMiddleware = middleware.LoggerWithConfig(middleware.LoggerConfig{
+var loggerMiddleware = middleware.LoggerConfig{
 	CustomTimeFormat: "02.01.2006 15:04:05",
-	Format:           "${remote_ip} - ${time_custom} '${method} ${uri} ${bytes_in} : ${status} ${bytes_out}\n",
-})
+	Format:           "${remote_ip} ${time_custom} '${method} ${uri}' ${status} : ${bytes_in} >> ${bytes_out}\n",
+}
 
 var debugMiddleware = middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
 	log.Printf("\n%s\n", reqBody)
@@ -37,7 +37,7 @@ func InitServer() *Server {
 	return &Server{
 		Server:   echo.New(),
 		HTTP2:    true,
-		LogFile:  "logs",
+		LogFile:  "logs.txt",
 		Debug:    false,
 		TLSCache: ".cache",
 	}
@@ -70,8 +70,9 @@ func (s Server) Start() {
 	}
 
 	if s.LogFile != "" {
-		setupLogger(s.LogFile)
-		s.Server.Use(loggerMiddleware)
+		file := setupLogger(s.LogFile)
+		loggerMiddleware.Output = file
+		s.Server.Use(middleware.LoggerWithConfig(loggerMiddleware))
 		if s.Debug {
 			s.Server.Use(debugMiddleware)
 		}
@@ -93,7 +94,6 @@ func (s Server) Start() {
 // Config and set logs file
 func setupLogger(filepath string) (file *os.File) {
 
-	filepath += ".txt"
 	file, err := os.OpenFile(filepath, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		log.Panic(err)

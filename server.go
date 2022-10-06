@@ -69,7 +69,7 @@ func setupHTTP2(e *echo.Echo) http.Server {
 }
 
 // Run Echo server
-func (s Server) Run() {
+func (s Server) StartServer() {
 
 	var srv http.Server
 

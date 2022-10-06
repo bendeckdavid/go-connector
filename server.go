@@ -37,7 +37,7 @@ func InitServer() *Server {
 	return &Server{
 		Server:   echo.New(),
 		HTTP2:    true,
-		LogFile:  "logs.txt",
+		LogFile:  "server.log",
 		Debug:    false,
 		TLSCache: ".cache",
 	}

@@ -1,7 +1,6 @@
 package connector
 
 import (
-	"crypto/tls"
 	"log"
 	"net/http"
 	"os"
@@ -9,18 +8,15 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"golang.org/x/crypto/acme"
-	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
 
 type Server struct {
-	Server   *echo.Echo
-	HTTP2    bool
-	LogFile  string
-	Debug    bool
-	TLSCache string
+	Server  *echo.Echo
+	HTTP2   bool
+	LogFile string
+	Debug   bool
 }
 
 var loggerMiddleware = middleware.LoggerConfig{
@@ -35,11 +31,10 @@ var debugMiddleware = middleware.BodyDump(func(c echo.Context, reqBody, resBody 
 // Start server instance
 func InitServer() *Server {
 	return &Server{
-		Server:   echo.New(),
-		HTTP2:    true,
-		LogFile:  "server.log",
-		Debug:    false,
-		TLSCache: ".cache",
+		Server:  echo.New(),
+		HTTP2:   true,
+		LogFile: "server.log",
+		Debug:   false,
 	}
 }
 
@@ -57,18 +52,6 @@ func (s Server) Start() {
 		}
 	}
 
-	if s.TLSCache != "" {
-		certManager := autocert.Manager{
-			Prompt: autocert.AcceptTOS,
-			Cache:  autocert.DirCache(s.TLSCache),
-		}
-
-		srv.TLSConfig = &tls.Config{
-			NextProtos:     []string{acme.ALPNProto},
-			GetCertificate: certManager.GetCertificate,
-		}
-	}
-
 	if s.LogFile != "" {
 		file := setupLogger(s.LogFile)
 		loggerMiddleware.Output = file
@@ -78,15 +61,7 @@ func (s Server) Start() {
 		}
 	}
 
-	var err error
-
-	if s.TLSCache != "" {
-		err = srv.ListenAndServeTLS("", "")
-	} else {
-		err = srv.ListenAndServe()
-	}
-
-	if err != http.ErrServerClosed {
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 }

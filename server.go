@@ -16,7 +16,7 @@ import (
 )
 
 type Server struct {
-	server   *echo.Echo
+	Server   *echo.Echo
 	HTTP2    bool
 	LogFile  string
 	Debug    bool
@@ -32,9 +32,62 @@ var debugMiddleware = middleware.BodyDump(func(c echo.Context, reqBody, resBody 
 	log.Printf("\n%s\n", reqBody)
 })
 
-// Init Echo server
-func (s *Server) Init() {
-	s.server = echo.New()
+// Start server instance
+func InitServer() *Server {
+	return &Server{
+		Server:   echo.New(),
+		HTTP2:    true,
+		LogFile:  "logs",
+		Debug:    false,
+		TLSCache: ".cache",
+	}
+}
+
+// Run Echo server
+func (s Server) Start() {
+
+	var srv http.Server
+
+	if s.HTTP2 {
+		srv = setupHTTP2(s.Server)
+	} else {
+		srv = http.Server{
+			Addr:    ":8080",
+			Handler: s.Server,
+		}
+	}
+
+	if s.TLSCache != "" {
+		certManager := autocert.Manager{
+			Prompt: autocert.AcceptTOS,
+			Cache:  autocert.DirCache(s.TLSCache),
+		}
+
+		srv.TLSConfig = &tls.Config{
+			NextProtos:     []string{acme.ALPNProto},
+			GetCertificate: certManager.GetCertificate,
+		}
+	}
+
+	if s.LogFile != "" {
+		setupLogger(s.LogFile)
+		s.Server.Use(loggerMiddleware)
+		if s.Debug {
+			s.Server.Use(debugMiddleware)
+		}
+	}
+
+	var err error
+
+	if s.TLSCache != "" {
+		err = srv.ListenAndServeTLS("", "")
+	} else {
+		err = srv.ListenAndServe()
+	}
+
+	if err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
 }
 
 // Config and set logs file
@@ -66,51 +119,4 @@ func setupHTTP2(e *echo.Echo) http.Server {
 		Handler: h2c.NewHandler(e, h2s),
 	}
 
-}
-
-// Run Echo server
-func (s Server) StartServer() {
-
-	var srv http.Server
-
-	if s.HTTP2 {
-		srv = setupHTTP2(s.server)
-	} else {
-		srv = http.Server{
-			Addr:    ":8080",
-			Handler: s.server,
-		}
-	}
-
-	if s.TLSCache != "" {
-		certManager := autocert.Manager{
-			Prompt: autocert.AcceptTOS,
-			Cache:  autocert.DirCache(s.TLSCache),
-		}
-
-		srv.TLSConfig = &tls.Config{
-			NextProtos:     []string{acme.ALPNProto},
-			GetCertificate: certManager.GetCertificate,
-		}
-	}
-
-	if s.LogFile != "" {
-		setupLogger(s.LogFile)
-		s.server.Use(loggerMiddleware)
-		if s.Debug {
-			s.server.Use(debugMiddleware)
-		}
-	}
-
-	var err error
-
-	if s.TLSCache != "" {
-		err = srv.ListenAndServeTLS("", "")
-	} else {
-		err = srv.ListenAndServe()
-	}
-
-	if err != http.ErrServerClosed {
-		log.Fatal(err)
-	}
 }

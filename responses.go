@@ -1,4 +1,4 @@
-package connector
+package conn
 
 import (
 	"fmt"
